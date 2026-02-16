@@ -22,7 +22,7 @@ adapter:
     - "o_proj"
 
 data:
-  source: "outputs/data/Anthropic_hh-rlhf_manifest.json"
+  source: "outputs/data/Anthropic_hh-rlhf_data.jsonl"
   train_split: "train"
   # Already constrained by manifest, but good for safety
   max_samples: 1000

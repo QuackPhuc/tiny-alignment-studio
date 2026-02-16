@@ -55,6 +55,15 @@ def main() -> None:
     )
     pipeline.save_manifest(manifest, args.output_dir)
 
+    # Save actual data records to JSONL
+    data_path = Path(args.output_dir) / f"{manifest.name}_data.jsonl"
+    import json
+
+    with open(data_path, "w", encoding="utf-8") as f:
+        for record in records:
+            f.write(json.dumps(record.model_dump()) + "\n")
+
+    logger.info("Saved data to: %s", data_path)
     logger.info("Done. %d records ready in %s", manifest.num_records, args.output_dir)
 
 
