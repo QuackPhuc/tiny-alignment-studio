@@ -1,0 +1,49 @@
+# Context Index: Tiny Alignment Studio
+# AI agents should read this file first to understand project layout.
+
+project:
+  name: tiny-alignment-studio
+  description: Educational RLHF framework with DPO training and interactive dashboard
+  python_version: ">=3.10"
+  package_root: src/
+
+navigation:
+  vision: .context/vision/product_manifest.md
+  architecture: .context/architecture/system_map.md
+  coding_rules: .context/ai/coding_rules.md
+  decisions: .context/decisions/
+
+key_modules:
+  contracts:
+    path: src/contracts/
+    purpose: Single source of truth for all data types and protocols
+    read_first: true
+
+  core:
+    path: src/core/
+    purpose: Training logic, algorithms, model loading, data pipeline
+    entrypoint: src/core/trainer.py
+
+  telemetry:
+    path: src/telemetry/
+    purpose: Training metrics, event streaming, callbacks
+
+  ui:
+    path: src/ui/
+    purpose: Streamlit dashboard for training monitor and arena
+    entrypoint: src/ui/app.py
+
+  utils:
+    path: src/utils/
+    purpose: Config loading, logging, hardware detection
+
+config:
+  base: configs/base.yaml
+  schema: configs/schemas/training_config.schema.json
+  experiments: configs/experiments/
+
+testing:
+  unit: tests/unit/
+  integration: tests/integration/
+  e2e: tests/e2e/
+  runner: pytest

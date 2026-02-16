@@ -1,0 +1,272 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "TrainingConfig",
+    "description": "Schema for Tiny Alignment Studio training configuration.",
+    "type": "object",
+    "required": [
+        "model",
+        "data",
+        "training"
+    ],
+    "properties": {
+        "model": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "HuggingFace model identifier or local path."
+                },
+                "quantization": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "bits": {
+                            "type": "integer",
+                            "enum": [
+                                4,
+                                8
+                            ],
+                            "default": 4
+                        },
+                        "quant_type": {
+                            "type": "string",
+                            "enum": [
+                                "nf4",
+                                "fp4"
+                            ],
+                            "default": "nf4"
+                        },
+                        "compute_dtype": {
+                            "type": "string",
+                            "enum": [
+                                "float16",
+                                "bfloat16"
+                            ],
+                            "default": "bfloat16"
+                        }
+                    }
+                },
+                "max_length": {
+                    "type": "integer",
+                    "minimum": 64,
+                    "default": 512
+                }
+            }
+        },
+        "adapter": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "lora",
+                        "none"
+                    ],
+                    "default": "lora"
+                },
+                "r": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 16
+                },
+                "alpha": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 32
+                },
+                "dropout": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 0.05
+                },
+                "target_modules": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "data": {
+            "type": "object",
+            "required": [
+                "source"
+            ],
+            "properties": {
+                "source": {
+                    "type": "string"
+                },
+                "subset": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "max_samples": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "minimum": 1
+                },
+                "train_split": {
+                    "type": "string",
+                    "default": "train"
+                },
+                "eval_split": {
+                    "type": "string",
+                    "default": "test"
+                },
+                "preprocessing": {
+                    "type": "object",
+                    "properties": {
+                        "max_prompt_length": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "max_completion_length": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                }
+            }
+        },
+        "training": {
+            "type": "object",
+            "required": [
+                "algorithm"
+            ],
+            "properties": {
+                "algorithm": {
+                    "type": "string",
+                    "enum": [
+                        "dpo",
+                        "ppo"
+                    ]
+                },
+                "output_dir": {
+                    "type": "string",
+                    "default": "outputs"
+                },
+                "num_epochs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                },
+                "batch_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 4
+                },
+                "gradient_accumulation_steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 4
+                },
+                "learning_rate": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 5e-5
+                },
+                "warmup_ratio": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "weight_decay": {
+                    "type": "number",
+                    "minimum": 0.0
+                },
+                "max_grad_norm": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "seed": {
+                    "type": "integer"
+                },
+                "fp16": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "bf16": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "logging_steps": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "eval_steps": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "save_steps": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "dpo": {
+            "type": "object",
+            "properties": {
+                "beta": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 0.1
+                },
+                "loss_type": {
+                    "type": "string",
+                    "enum": [
+                        "sigmoid",
+                        "hinge",
+                        "ipo"
+                    ],
+                    "default": "sigmoid"
+                },
+                "label_smoothing": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 0.0
+                },
+                "reference_free": {
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "telemetry": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "log_dir": {
+                    "type": "string",
+                    "default": "logs"
+                },
+                "wandb": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "project": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

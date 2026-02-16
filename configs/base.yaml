@@ -1,0 +1,62 @@
+# Base training configuration for Tiny Alignment Studio.
+# All experiment configs inherit from this file.
+
+model:
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  quantization:
+    enabled: true
+    bits: 4
+    quant_type: "nf4"
+    compute_dtype: "bfloat16"
+  max_length: 512
+
+adapter:
+  type: "lora"
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+
+data:
+  source: "Anthropic/hh-rlhf"
+  subset: null
+  max_samples: null
+  train_split: "train"
+  eval_split: "test"
+  preprocessing:
+    max_prompt_length: 256
+    max_completion_length: 256
+
+training:
+  algorithm: "dpo"
+  output_dir: "outputs"
+  num_epochs: 1
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 5.0e-5
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  seed: 42
+  fp16: false
+  bf16: true
+  logging_steps: 10
+  eval_steps: 100
+  save_steps: 200
+
+dpo:
+  beta: 0.1
+  loss_type: "sigmoid"
+  label_smoothing: 0.0
+  reference_free: false
+
+telemetry:
+  enabled: true
+  log_dir: "logs"
+  wandb:
+    enabled: false
+    project: "tiny-alignment-studio"
