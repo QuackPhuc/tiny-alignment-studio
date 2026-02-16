@@ -23,14 +23,14 @@ env/
 Thumbs.db
 
 # Project outputs
-outputs/
-logs/
-checkpoints/
+/outputs/
+/logs/
+/checkpoints/
 
 # Data
 *.jsonl
 *.parquet
-data/
+/data/
 
 # Secrets
 .env
