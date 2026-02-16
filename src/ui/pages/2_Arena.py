@@ -6,27 +6,12 @@ from a base model and a fine-tuned (aligned) model.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 from src.ui.components.chat_widget import render_chat_column
 from src.ui.state import get, init_state, set_value
-
-
-def _generate_placeholder(model_type: str, prompt: str) -> str:
-    """Placeholder response generator until real model inference.
-
-    Args:
-        model_type: Either 'base' or 'aligned'.
-        prompt: User prompt.
-
-    Returns:
-        Placeholder response string.
-    """
-    return (
-        f"[{model_type.upper()} MODEL] This is a placeholder response "
-        f"for: '{prompt[:50]}...'. Connect a real model to see actual outputs."
-    )
-
 
 init_state()
 
@@ -49,6 +34,42 @@ if st.sidebar.button("Clear chat"):
     set_value("arena_messages", [])
     st.rerun()
 
+
+@st.cache_resource(show_spinner="Loading base model...")
+def _load_base(model_name: str):
+    """Cache the base model to avoid reloading on each interaction."""
+    from src.core.inference import load_model_for_inference
+
+    return load_model_for_inference(model_name, adapter_path=None)
+
+
+@st.cache_resource(show_spinner="Loading aligned model...")
+def _load_aligned(model_name: str, _adapter_path: str):
+    """Cache the aligned model (base + adapter)."""
+    from src.core.inference import load_model_for_inference
+
+    return load_model_for_inference(model_name, adapter_path=_adapter_path)
+
+
+def _generate(model, tokenizer, prompt: str) -> str:
+    """Generate a response using the shared inference utility."""
+    from src.core.inference import GenerationConfig, generate_response
+
+    config = GenerationConfig(
+        max_new_tokens=max_tokens,
+        temperature=max(temperature, 0.01),
+    )
+    return generate_response(model, tokenizer, prompt, config)
+
+
+# --- Check adapter availability ---
+adapter_exists = Path(adapter_path).exists()
+if not adapter_exists:
+    st.warning(
+        f"Adapter not found at `{adapter_path}`. "
+        "Train a model first, or update the adapter path in the sidebar."
+    )
+
 # --- Chat input ---
 prompt = st.chat_input("Enter a prompt to compare responses...")
 
@@ -58,9 +79,19 @@ if prompt:
         messages = []
     messages.append({"role": "user", "content": prompt})
 
-    # Generate responses (placeholder until model loading is connected)
-    base_response = _generate_placeholder("base", prompt)
-    aligned_response = _generate_placeholder("aligned", prompt)
+    with st.spinner("Generating responses..."):
+        # Base model response
+        base_model_obj, base_tokenizer = _load_base(base_model)
+        base_response = _generate(base_model_obj, base_tokenizer, prompt)
+
+        # Aligned model response (falls back to base if no adapter)
+        if adapter_exists:
+            aligned_model_obj, aligned_tokenizer = _load_aligned(
+                base_model, adapter_path
+            )
+            aligned_response = _generate(aligned_model_obj, aligned_tokenizer, prompt)
+        else:
+            aligned_response = "[No adapter loaded] — train a model first."
 
     messages.append(
         {
