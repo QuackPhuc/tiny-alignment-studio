@@ -47,11 +47,24 @@ class DataPipeline:
         """
         logger.info("Loading dataset: source=%s, split=%s", source, split)
 
-        load_kwargs: dict[str, Any] = {"path": source, "split": split}
-        if subset:
-            load_kwargs["name"] = subset
+        location = Path(source)
+        if (
+            location.exists()
+            and location.is_file()
+            and location.suffix in (".json", ".jsonl")
+        ):
+            logger.info("Loading local file: %s", source)
+            # For JSON/JSONL, we load it as a dataset
+            data_files = {"train": str(location)}
+            if split != "train":
+                data_files[split] = str(location)
 
-        dataset = load_dataset(**load_kwargs)
+            dataset = load_dataset("json", data_files=data_files, split=split)
+        else:
+            load_kwargs: dict[str, Any] = {"path": source, "split": split}
+            if subset:
+                load_kwargs["name"] = subset
+            dataset = load_dataset(**load_kwargs)
 
         if self.max_samples and len(dataset) > self.max_samples:
             dataset = dataset.select(range(self.max_samples))

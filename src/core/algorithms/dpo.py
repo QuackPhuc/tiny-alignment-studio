@@ -60,9 +60,6 @@ class DPOAlgorithm(AlgorithmPlugin):
             beta=dpo.get("beta", 0.1),
             loss_type=dpo.get("loss_type", "sigmoid"),
             max_length=config.get("model", {}).get("max_length", 512),
-            max_prompt_length=config.get("data", {})
-            .get("preprocessing", {})
-            .get("max_prompt_length", 256),
             remove_unused_columns=False,
         )
 
