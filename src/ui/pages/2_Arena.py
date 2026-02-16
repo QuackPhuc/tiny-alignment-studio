@@ -11,6 +11,23 @@ import streamlit as st
 from src.ui.components.chat_widget import render_chat_column
 from src.ui.state import get, init_state, set_value
 
+
+def _generate_placeholder(model_type: str, prompt: str) -> str:
+    """Placeholder response generator until real model inference.
+
+    Args:
+        model_type: Either 'base' or 'aligned'.
+        prompt: User prompt.
+
+    Returns:
+        Placeholder response string.
+    """
+    return (
+        f"[{model_type.upper()} MODEL] This is a placeholder response "
+        f"for: '{prompt[:50]}...'. Connect a real model to see actual outputs."
+    )
+
+
 init_state()
 
 st.set_page_config(page_title="Arena", layout="wide")
@@ -70,19 +87,3 @@ else:
     with col_aligned:
         st.subheader("Aligned Model")
         render_chat_column(messages, model_key="aligned")
-
-
-def _generate_placeholder(model_type: str, prompt: str) -> str:
-    """Placeholder response generator until real model inference.
-
-    Args:
-        model_type: Either 'base' or 'aligned'.
-        prompt: User prompt.
-
-    Returns:
-        Placeholder response string.
-    """
-    return (
-        f"[{model_type.upper()} MODEL] This is a placeholder response "
-        f"for: '{prompt[:50]}...'. Connect a real model to see actual outputs."
-    )

@@ -14,12 +14,19 @@ from src.telemetry.events import EventWriter
 
 logger = logging.getLogger(__name__)
 
+try:
+    from transformers import TrainerCallback
 
-class TelemetryCallback:
+    _BASE_CLASS = TrainerCallback
+except ImportError:
+    _BASE_CLASS = object
+
+
+class TelemetryCallback(_BASE_CLASS):
     """Trainer callback that emits RunEvents to an EventWriter.
 
-    Inherits from TrainerCallback at runtime when transformers is
-    available. Works as standalone for testing otherwise.
+    Inherits from TrainerCallback when transformers is available,
+    enabling automatic integration with the Trainer loop.
 
     Args:
         event_writer: EventWriter for persisting telemetry events.
@@ -27,6 +34,8 @@ class TelemetryCallback:
     """
 
     def __init__(self, event_writer: EventWriter, run_id: str) -> None:
+        if _BASE_CLASS is not object:
+            super().__init__()
         self.event_writer = event_writer
         self.run_id = run_id
 

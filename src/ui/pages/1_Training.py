@@ -26,7 +26,7 @@ st.set_page_config(page_title="Training Monitor", layout="wide")
 st.title("Training Monitor")
 
 # --- Sidebar: run selection ---
-log_dir = st.sidebar.text_input("Log directory", value="outputs/telemetry")
+log_dir = st.sidebar.text_input("Log directory", value="logs")
 available_runs = EventReader.list_runs(log_dir)
 
 if not available_runs:

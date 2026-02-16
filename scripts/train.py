@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.trainer import AlignmentTrainer
+from src.telemetry.callbacks import create_telemetry_callback
 from src.utils.logging import setup_logger
 
 logger = setup_logger("train")
@@ -41,7 +43,18 @@ def main() -> None:
         trainer.config.model_name,
     )
 
-    result = trainer.train()
+    # Set up telemetry callback for live monitoring
+    telemetry_config = trainer._raw_config.get("telemetry", {})
+    log_dir = telemetry_config.get("log_dir", "logs")
+    run_id = f"run_{uuid.uuid4().hex[:8]}"
+    callbacks = []
+
+    if telemetry_config.get("enabled", True):
+        telemetry_cb = create_telemetry_callback(log_dir, run_id)
+        callbacks.append(telemetry_cb)
+        logger.info("Telemetry enabled: log_dir=%s, run_id=%s", log_dir, run_id)
+
+    result = trainer.train(callbacks=callbacks)
     logger.info("Training complete!")
     logger.info("  Loss: %.4f", result["training_loss"])
     logger.info("  Output: %s", result["output_dir"])
