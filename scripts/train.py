@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.trainer import AlignmentTrainer
-from src.telemetry.callbacks import create_telemetry_callback
+from src.telemetry.callbacks import create_telemetry_callback, create_wandb_callback
 from src.utils.logging import setup_logger
 
 logger = setup_logger("train")
@@ -53,6 +53,11 @@ def main() -> None:
         telemetry_cb = create_telemetry_callback(log_dir, run_id)
         callbacks.append(telemetry_cb)
         logger.info("Telemetry enabled: log_dir=%s, run_id=%s", log_dir, run_id)
+
+    wandb_cb = create_wandb_callback(trainer._raw_config, run_name=run_id)
+    if wandb_cb:
+        callbacks.append(wandb_cb)
+        logger.info("Wandb logging enabled")
 
     result = trainer.train(callbacks=callbacks)
     logger.info("Training complete!")

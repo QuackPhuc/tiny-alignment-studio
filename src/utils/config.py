@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import copy
+import json
+import logging
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 from src.contracts.training import TrainConfig
+
+logger = logging.getLogger(__name__)
 
 
 def load_config(config_path: str | Path) -> TrainConfig:
@@ -31,6 +37,69 @@ def load_config(config_path: str | Path) -> TrainConfig:
         raw = yaml.safe_load(f)
 
     return TrainConfig(**_flatten_config(raw))
+
+
+def merge_configs(
+    base_path: str | Path,
+    override_path: str | Path,
+) -> dict[str, Any]:
+    """Deep-merge an override config on top of a base config.
+
+    Override values replace base values at the leaf level.
+    Nested dicts are merged recursively.
+
+    Args:
+        base_path: Path to the base YAML config.
+        override_path: Path to the override YAML config.
+
+    Returns:
+        Merged config dict.
+    """
+    base_path, override_path = Path(base_path), Path(override_path)
+
+    with base_path.open() as f:
+        base = yaml.safe_load(f) or {}
+    with override_path.open() as f:
+        override = yaml.safe_load(f) or {}
+
+    return _deep_merge(base, override)
+
+
+def validate_config_schema(
+    config: dict[str, Any],
+    schema_path: str | Path | None = None,
+) -> list[str]:
+    """Validate a config dict against the JSON Schema.
+
+    Args:
+        config: Parsed YAML config dict.
+        schema_path: Path to JSON Schema file. Defaults to
+            configs/schemas/training_config.schema.json.
+
+    Returns:
+        List of validation error messages (empty if valid).
+    """
+    try:
+        import jsonschema
+    except ImportError:
+        logger.warning("jsonschema not installed, skipping schema validation")
+        return []
+
+    if schema_path is None:
+        schema_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "configs"
+            / "schemas"
+            / "training_config.schema.json"
+        )
+    schema_path = Path(schema_path)
+    if not schema_path.exists():
+        logger.warning("Schema file not found: %s", schema_path)
+        return []
+
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    validator = jsonschema.Draft7Validator(schema)
+    return [err.message for err in validator.iter_errors(config)]
 
 
 def _flatten_config(raw: dict) -> dict:
@@ -62,3 +131,22 @@ def _flatten_config(raw: dict) -> dict:
         "output_dir": training_cfg.get("output_dir", "outputs"),
         "bf16": training_cfg.get("bf16", True),
     }
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge override into base.
+
+    Args:
+        base: Base config dict (not mutated).
+        override: Override values to apply.
+
+    Returns:
+        New merged dict.
+    """
+    result = copy.deepcopy(base)
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result

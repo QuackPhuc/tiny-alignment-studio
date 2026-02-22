@@ -8,17 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-import torch
-from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    PreTrainedModel,
-    PreTrainedTokenizerBase,
-)
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.contracts.training import TrainConfig
@@ -30,8 +20,8 @@ logger = logging.getLogger(__name__)
 class LoadedModel:
     """Container for a loaded model and its tokenizer."""
 
-    model: PreTrainedModel
-    tokenizer: PreTrainedTokenizerBase
+    model: Any
+    tokenizer: Any
     is_quantized: bool
     has_adapter: bool
 
@@ -74,7 +64,7 @@ class ModelLoader:
         )
 
 
-def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+def _load_tokenizer(model_name: str) -> Any:
     """Load and configure tokenizer with padding token.
 
     Args:
@@ -83,6 +73,8 @@ def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     Returns:
         Configured tokenizer.
     """
+    from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -90,7 +82,7 @@ def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     return tokenizer
 
 
-def _load_quantized_model(model_name: str, bits: int) -> PreTrainedModel:
+def _load_quantized_model(model_name: str, bits: int) -> Any:
     """Load a model with BitsAndBytes quantization.
 
     Args:
@@ -100,6 +92,10 @@ def _load_quantized_model(model_name: str, bits: int) -> PreTrainedModel:
     Returns:
         Quantized model ready for adapter attachment.
     """
+    import torch
+    from peft import prepare_model_for_kbit_training
+    from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+
     compute_dtype = torch.bfloat16
     if not torch.cuda.is_bf16_supported():
         compute_dtype = torch.float16
@@ -123,7 +119,7 @@ def _load_quantized_model(model_name: str, bits: int) -> PreTrainedModel:
     return model
 
 
-def _load_base_model(model_name: str) -> PreTrainedModel:
+def _load_base_model(model_name: str) -> Any:
     """Load a model without quantization (full precision or bf16).
 
     Args:
@@ -132,6 +128,9 @@ def _load_base_model(model_name: str) -> PreTrainedModel:
     Returns:
         Full-precision model.
     """
+    import torch
+    from transformers import AutoModelForCausalLM
+
     return AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
@@ -139,7 +138,7 @@ def _load_base_model(model_name: str) -> PreTrainedModel:
     )
 
 
-def _attach_lora(model: PreTrainedModel, is_quantized: bool) -> PreTrainedModel:
+def _attach_lora(model: Any, is_quantized: bool) -> Any:
     """Attach a LoRA adapter to the model.
 
     Args:
@@ -149,6 +148,8 @@ def _attach_lora(model: PreTrainedModel, is_quantized: bool) -> PreTrainedModel:
     Returns:
         Model with LoRA adapter attached.
     """
+    from peft import LoraConfig, TaskType, get_peft_model
+
     lora_config = LoraConfig(
         r=16,
         lora_alpha=32,
@@ -168,7 +169,7 @@ def _attach_lora(model: PreTrainedModel, is_quantized: bool) -> PreTrainedModel:
     return model
 
 
-def _log_model_info(model: PreTrainedModel, quantized: bool, adapter: bool) -> None:
+def _log_model_info(model: Any, quantized: bool, adapter: bool) -> None:
     """Log model configuration summary.
 
     Args:

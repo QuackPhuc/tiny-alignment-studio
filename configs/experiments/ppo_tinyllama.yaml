@@ -1,0 +1,46 @@
+# PPO fine-tuning with TinyLlama
+# Uses a sentiment classifier as reward model for demonstration
+
+model:
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  quantization:
+    enabled: true
+    bits: 4
+    quant_type: "nf4"
+  max_length: 256
+
+adapter:
+  type: "lora"
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+
+data:
+  source: "Anthropic/hh-rlhf"
+  max_samples: 500
+  train_split: "train"
+
+training:
+  algorithm: "ppo"
+  output_dir: "outputs/ppo_tinyllama"
+  num_epochs: 1
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 1.41e-5
+  seed: 42
+
+ppo:
+  mini_batch_size: 1
+  ppo_epochs: 4
+  init_kl_coeff: 0.2
+  target_kl: 6.0
+  reward_model: "lvwerra/distilbert-imdb"
+
+telemetry:
+  enabled: true
+  log_dir: "logs"
